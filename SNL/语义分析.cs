@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace SNL {
     internal class 语义错误 {
@@ -16,7 +12,7 @@ namespace SNL {
     }
     internal enum 语义错误Enum {
         OK,
-        标识符重复定义,
+        重复的标识符,
         未声明标识符,
         未知的类型,
         非期望的标识符类别,

@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SNL"
         mc:Ignorable="d"
-        FontFamily="Cascadia Code" FontSize="16"
-        Title="Small Nested Language" Height="450" Width="800">
+        FontFamily="Cascadia Code" FontSize="24"
+        Title="Small Nested Language" Height="750" Width="1200">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"></RowDefinition>
@@ -19,7 +19,7 @@
         <!---->
         <StackPanel  Orientation="Horizontal" Margin="0 0 0 0">
             <Button x:Name="按钮词法分析" Content="词法分析" Margin="10 5 10 5" Click="按钮词法分析_Click" />
-            <ComboBox x:Name="下拉语法分析方式" Margin="10 5 0 5" MinWidth="100"   >
+            <ComboBox x:Name="下拉语法分析方式" Margin="10 5 0 5" MinWidth="150"   >
                 <ComboBoxItem >递归下降</ComboBoxItem>
                 <ComboBoxItem IsSelected="True" >LL(1)</ComboBoxItem>
             </ComboBox>

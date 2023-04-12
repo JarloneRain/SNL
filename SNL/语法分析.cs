@@ -1,24 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static SNL.语法树;
 
 namespace SNL {
     internal class 语法分析异常 : Exception {
         Token token;
-        
-        public override string Message { get => $"语法分析发生异常，终止于{token}"; }
+
+        public override string Message => $"语法分析发生异常，终止于\n{token}";
         public 语法分析异常(Token token) {
             this.token = token;
         }
     }
     internal static class 语法 {
+        
+        public static 语法树 分析_递归下降(List<Token> tokenList) {
+            //写完之前防止报错用的，最后记得改掉
+            return 分析_LL1(tokenList);
+        }
 
-        //public static 语法树 分析_递归下降(List<Token> tokenList) {
-        //    ;
-        //}
+
+
         class 表达式构造器 {
             public static readonly Dictionary<char, int> 算符优先级 = new() {
                 ['('] = 0,
@@ -50,7 +51,10 @@ namespace SNL {
                 表达式栈.Push(exp);
             }
             public void Push(Token token) {
-                if (token.Terminal.Content[0] == ')') {
+                if (false) {
+                } else if (token.Terminal.Content[0] == '(') {
+                    运算符栈.Push(token);
+                } else if (token.Terminal.Content[0] == ')') {
                     for (
                         Token t = 运算符栈.Pop();
                         t.Terminal.Content[0] != '(';
@@ -61,7 +65,7 @@ namespace SNL {
                 } else {
                     while (运算符栈.Count != 0 &&
                         算符优先级[运算符栈.Peek().Terminal.Content[0]] >= 算符优先级[token.Terminal.Content[0]]
-                    ) { 
+                    ) {
                         构造结点并压栈(运算符栈.Pop());
                     }
                     运算符栈.Push(token);
@@ -94,14 +98,15 @@ namespace SNL {
             int curLine = 0;
             类型描述? curType = null;
             int arrayLow = 0, arrayTop = 0;
-            Action<List<语句>, 语句, 表达式?> 当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表 = (stmList, stm, exp) => {
+            Action<List<语句>, 语句, 表达式构造器?> 当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表 = (stmList, stm, exp) => {
                 if (stm as 赋值语句 != null) {
-                    (stm as 赋值语句)!.右 = exp;
+                    (stm as 赋值语句)!.右 = exp!.Get();
                 }
                 stmList!.Add(stm!);
             };
 
             foreach (Token token in tokenList) {
+            CONTINUE:
                 try {
                     var top = 分析栈.Pop();
                     if (top.语法符号.IsTerminal) {
@@ -138,28 +143,30 @@ namespace SNL {
                             case 09://类型定义→ID
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
-                                    curType = 类型描述.自定类型(token.Terminal.Content, token.Line);
+                                    curType = new 自定类型描述(token.Terminal.Content) { 行号 = curLine };
                                 }
                                 break;
                             case 10://基础类型→INTEFER
                                 if (false) {
                                 } else if (terminal.Is(终结符.INTEGER)) {
-                                    curType = isArray ? 类型描述.数组类型(
-                                            arrayLow, arrayTop,
-                                            类型描述.整数类型(token.Line),
-                                            curLine
-                                        ) : 类型描述.整数类型(token.Line);
+                                    curType = isArray ? new 数组类型描述 {
+                                        行号 = curLine,
+                                        下界 = arrayLow,
+                                        上界 = arrayTop,
+                                        元素类型 = 类型描述.整数类型(token.Line),
+                                    } : 类型描述.整数类型(token.Line);
                                     isArray = false;
                                 }
                                 break;
                             case 11://基础类型→CHAR
                                 if (false) {
                                 } else if (terminal.Is(终结符.CHAR)) {
-                                    curType = isArray ? 类型描述.数组类型(
-                                        arrayLow, arrayTop,
-                                        类型描述.字符类型(token.Line),
-                                        curLine
-                                    ) : 类型描述.字符类型(token.Line);
+                                    curType = isArray ? new 数组类型描述 {
+                                        行号 = curLine,
+                                        下界 = arrayLow,
+                                        上界 = arrayTop,
+                                        元素类型 = 类型描述.字符类型(token.Line),
+                                    } : 类型描述.字符类型(token.Line);
                                     isArray = false;
                                 }
                                 break;
@@ -196,7 +203,7 @@ namespace SNL {
                             case 22://字段名表→ID 字段名余
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
-                                    curFieldList.Add((terminal.Content, curType!));
+                                    curFieldList.Add((token.Terminal.Content, curType!));
                                 }
                                 break;
                             case 30://变量名表→ID 变量名余
@@ -246,28 +253,28 @@ namespace SNL {
                                     curStm = new 空的语句(token.Line, curProc!);
                                     curStmList = curProc!.过程体;
                                 } else if (terminal.Is(终结符.END)) {
-                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp!.Get());
+                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp);
                                     curProc = (curProc!.亲 != null) ? (curProc.亲 as 过程声明) : curProc;
                                 }
                                 break;
                             case 48://语句更多→; 语句列表
                                 if (false) {
                                 } else if (terminal.Is(终结符.分号)) {
-                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp!.Get());
+                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp);
                                 }
                                 break;
                             case 54://一条语句→ID 赋调语句
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
                                     curID = token.Terminal.Content;
+                                    curLine = token.Line;
                                 }
                                 break;
                             case 57://赋值语句→变量赘余 := 算术式子
                                 if (false) {
                                 } else if (terminal.Is(终结符.赋值)) {
-                                    curStm = new 赋值语句(token.Line, curStm!.亲!) {
-                                        左 = curExp!.Get()
-                                    };
+                                    (curStm as 赋值语句)!.左 = curExp!.Get();
+                                    curExp = new 表达式构造器(curStm!);
                                 }
                                 break;
                             case 58://条件语句→IF 条件式子 THEN 语句列表 ELSE 语句列表 FI
@@ -280,11 +287,11 @@ namespace SNL {
                                     curStm = new 空的语句(token.Line, curStm!);
                                     curStmList = (curStm!.亲! as 条件语句)!.THEN;
                                 } else if (terminal.Is(终结符.ELSE)) {
-                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp!.Get());
+                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp);
                                     curStm = new 空的语句(token.Line, curStm!.亲!);
                                     curStmList = (curStm!.亲! as 条件语句)!.ELSE;
                                 } else if (terminal.Is(终结符.FI)) {
-                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp!.Get());
+                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp);
                                     curStm = curStm!.亲 as 条件语句;
                                     if (curStm!.亲 as 过程声明 != null) {
                                         curStmList = (curStm!.亲 as 过程声明)!.过程体;
@@ -313,7 +320,7 @@ namespace SNL {
                                     curStmList = (curStm as 循环语句)!.循环体;
                                     curStm = new 空的语句(token.Line, curStm);
                                 } else if (terminal.Is(终结符.ENDWH)) {
-                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp!.Get());
+                                    当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp);
                                     curStm = curStm!.亲 as 循环语句;
                                     if (curStm!.亲 as 过程声明 != null) {
                                         curStmList = (curStm!.亲 as 过程声明)!.过程体;
@@ -330,14 +337,14 @@ namespace SNL {
                                                 throw new Exception("我也不知道是什么错误，反正就是就是出错了！");
                                         }
                                     }
-                                    curStm = curStm.亲 as 语句;
                                     curStmList.Add(curStm!);
+                                    //curStm = curStm.亲 as 语句;
                                 }
                                 break;
                             case 60://输入语句→READ ( ID )
                                 if (false) {
                                 } else if (terminal.Is(终结符.READ)) {
-                                    curStm = new 输出语句(token.Line, curStm!.亲!);
+                                    curStm = new 输入语句(token.Line, curStm!.亲!);
                                 } else if (terminal.Is(终结符.左圆)) {
                                     curExp = new 表达式构造器(curStm!);
                                 } else if (terminal.Is(终结符.ID)) {
@@ -349,7 +356,7 @@ namespace SNL {
                             case 61://输出语句→WRITE ( 算术式子 )
                                 if (false) {
                                 } else if (terminal.Is(终结符.WRITE)) {
-                                    curStm = new 输入语句(token.Line, curStm!.亲!);
+                                    curStm = new 输出语句(token.Line, curStm!.亲!);
                                 } else if (terminal.Is(终结符.左圆)) {
                                     curExp = new 表达式构造器(curStm!);
                                 } else if (terminal.Is(终结符.右圆)) {
@@ -394,10 +401,15 @@ namespace SNL {
                                     curExp!.Push(new 表达式(token.Line, curStm!, '#', token.Terminal.Content));
                                 }
                                 break;
+                            case 77://算术因子→ID 变量赘余
+                                if (false) {
+                                } else if (terminal.Is(终结符.ID)) {
+                                    curExp!.Push(new 表达式(token.Line, curStm!, '$', token.Terminal.Content));
+                                }
+                                break;
                             case 79://变量赘余→[ 算术式子 ]
                                 if (false) {
                                 } else if (terminal.Is(终结符.左方)) {
-                                    curExp!.Push(new 表达式(curLine, curStm!, '$', curID));
                                     //curExp!.Push(token); 这里特殊处理一下，把 arr[i]处理成arr_(i)
                                     curExp!.Push(new Token(token.Line, new 终结符(终结符.TypeEnum.SY, "_")));
                                     curExp!.Push(new Token(token.Line, 终结符.左圆));
@@ -408,7 +420,6 @@ namespace SNL {
                             case 80://变量赘余→. 记录域名
                                 if (false) {
                                 } else if (terminal.Is(终结符.单点)) {
-                                    curExp!.Push(new 表达式(curLine, curStm!, '$', curID));
                                     curExp!.Push(token);
                                 }
                                 break;
@@ -472,6 +483,14 @@ namespace SNL {
                         for (int k = 产生式.Length - 1; k >= 0; k--) {
                             分析栈.Push((产生式[k], 当前语法编号));
                         }
+                        switch (当前语法编号) {
+                            case 55://赋调语句→赋值语句
+                                curStm = new 赋值语句(curLine, curStm!.亲!);
+                                curExp = new 表达式构造器(curStm!);
+                                curExp!.Push(new 表达式(curLine, curStm!, '$', curID));
+                                break;
+                        }
+                        goto CONTINUE;
                     }
                 } catch (Exception) {
                     throw new 语法分析异常(token);

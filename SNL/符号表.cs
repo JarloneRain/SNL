@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace SNL {
     using static SNL.语法树;
-    using 参数列表类型 = List<(类型描述 类型, bool 引用)>;
     internal partial class 符号表 {
         符号表? 外表 = null;
         public List<符号表项> 表项内容 {
@@ -93,7 +88,7 @@ namespace SNL {
             ** 也可能是别的“新”类型
             ** 描述里面存的一定是旧类型
             */
-            类型描述 描述;
+            public 类型描述 描述;
             public 类型(
                 string 类型名,
                 int 行号,

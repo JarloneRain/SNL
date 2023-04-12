@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SNL {
     internal static class 词法 {
@@ -52,6 +49,8 @@ namespace SNL {
 
         static int currentline = 1;
         static int currentchar = 0;
+        static int col = 1;
+        static int length = 0;
 
         static int reservedLookup(string str) {
             string Str = str.ToUpper();
@@ -64,6 +63,8 @@ namespace SNL {
         static void Init() {
             currentline = 1;
             currentchar = 0;
+            col = 1;
+            length = 0;
         }
         static Token Scan(string sourceCode) {//scan函数会扫描出下一个token序列并返回
             char[] symbols = new char[] { '+', '-', '*', '/', '<', '(', ')', '[', ']', ';', '=', ',' };
@@ -72,6 +73,7 @@ namespace SNL {
             //Token t;
             //t.Line = currentline;//从第一行开始
             int lNum = currentline;
+            length = 0;
             string str = "";
             char c = sourceCode[currentchar++];
         LS0:
@@ -97,40 +99,48 @@ namespace SNL {
         LS1:
             str = str + c;//str代表已经处理了的序列，c【0】永远是当前要处理的字符
             c = sourceCode[currentchar++];
+            length++;
             if (c >= 'a' && c <= 'z') goto LS1;
             else if (c >= 'A' && c <= 'Z') goto LS1;
             else if (c >= '0' && c <= '9') goto LS1;
             currentchar--;//此时一个读完一个串并且读入了一个多余的字符，所以回退一位
+            length--;
             int nres = reservedLookup(str);
             if (nres != -1) {//将已经处理的序列与保留字对比，并识别是哪一个保留字
-                Token t1 = new Token(lNum, 终结符.TypeEnum.KW, Keywords[nres]);
-
+                Token t1 = new Token(lNum, 终结符.TypeEnum.KW, Keywords[nres],col++);
+                col = col + length;
                 return t1;//识别为保留字
             } else {
-                Token t1 = new Token(lNum, 终结符.TypeEnum.ID, str);
+                Token t1 = new Token(lNum, 终结符.TypeEnum.ID, str,col++);
+                col = col + length;
                 return t1;//识别为标识符
             }
         LS2:
             str = str + c;
             c = sourceCode[currentchar++];
+            length++;
             if (c >= '0' && c <= '9') goto LS2;
-            currentchar--;//直到当前字符不是数字才进入此语句，并回退一位
+            currentchar--;
+            length--;//直到当前字符不是数字才进入此语句，并回退一位
             //t.id = NUM;
-            Token t2 = new Token(lNum, 终结符.TypeEnum.NM, str);
+            Token t2 = new Token(lNum, 终结符.TypeEnum.NM, str,col++);
+            col = col + length;
             //t.lex = addNUMTable(str_to_num(str));//将这个数字写入数字表并返回位置
             return t2;//识别为NUM
         LS3:
             int lex = symbols_n[indexofsym];
-            Token t3 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[lex - 100]);
+            Token t3 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[lex - 100], col++);
             return t3;//识别为12个单目符，其他符号要么可能为多字符要么有报错处理
         LS4://用来识别 ..、.
             str = str + c;
             c = sourceCode[currentchar++];//读下一个字符
             if (c == '.') {
-                Token t4 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[INDEX - 100]);
+                length++;
+                Token t4 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[INDEX - 100], col++);
+                col = col + length;
                 return t4;//识别..成功
             } else {
-                Token t4 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[POINT - 100]);
+                Token t4 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[POINT - 100], col++);
                 currentchar--;
                 return t4;//识别.成功
             }
@@ -140,6 +150,7 @@ namespace SNL {
 
                 if (c == '\n' || c == '\r') {
                     currentline++;
+                    col = 1;
                 }//如果有换行和回车代表行数加一
                 c = sourceCode[currentchar++];
             }
@@ -153,7 +164,9 @@ namespace SNL {
             str = str + c;
             c = sourceCode[currentchar++];
             if (c == '=') {
-                Token t6 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[ASSI - 100]);
+                length++;
+                Token t6 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[ASSI - 100], col++);
+                col = col + length;
                 return t6;
             } else {
                 throw new Exception($"位于第{currentline}行\n符号处理出错");
@@ -165,21 +178,22 @@ namespace SNL {
                 c = sourceCode[currentchar++];
             }
             if (c == '\'') {
-                Token t7 = new Token(lNum, 终结符.TypeEnum.CH, str);
+                Token t7 = new Token(lNum, 终结符.TypeEnum.CH, str,col++);
                 return t7;
             } else {
                 //showError(STR_ERROR, "");//否则报错
                 throw new Exception($"位于第{currentline}行\nsometing wrong : STR");
             }
         LS8://换行符不处理，只把行号加一
-            Token t8 = new Token(-1, 终结符.TypeEnum.CH, "");
+            Token t8 = new Token(-1, 终结符.TypeEnum.CH, "",col++);
             currentline++;
+            col = 1;
             return t8;//
         LS9://文件结束符
-            Token t9 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[EOFF - 100]);
+            Token t9 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[EOFF - 100], col++);
             return t9;//
         LS10:
-            Token t10 = new Token(-1, 终结符.TypeEnum.CH, "");
+            Token t10 = new Token(-1, 终结符.TypeEnum.CH, "", col++);
             return t10;
         OTHER:
             throw new Exception($"位于第{currentline}行\n出现了无法识别的字符：{((byte)c)}");

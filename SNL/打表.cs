@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace SNL {
     //关键字和符号的终结符对象
     internal partial class 终结符 : 结符 {
         public readonly static 终结符 ID = new(TypeEnum.ID, "");
+        public readonly static 终结符 INTC = new(TypeEnum.NM, "");
         /********************************************************************/
         public readonly static 终结符 BEGIN = new(TypeEnum.KW, "BEGIN");
         public readonly static 终结符 END = new(TypeEnum.KW, "END");
@@ -21,7 +18,6 @@ namespace SNL {
         public readonly static 终结符 CHAR = new(TypeEnum.KW, "CHAR");
         public readonly static 终结符 ARRAY = new(TypeEnum.KW, "ARRAY");
         public readonly static 终结符 OF = new(TypeEnum.KW, "OF");
-        public readonly static 终结符 INTC = new(TypeEnum.KW, "INTC");
         public readonly static 终结符 RECORD = new(TypeEnum.KW, "RECORD");
         public readonly static 终结符 IF = new(TypeEnum.KW, "IF");
         public readonly static 终结符 THEN = new(TypeEnum.KW, "THEN");
@@ -181,7 +177,7 @@ namespace SNL {
             new 结符[]{终结符.分号,参数描表},
             //形式参数
             new 结符[]{类型定义,参量名表},
-            new 结符[]{终结符.VAR,参量名表},
+            new 结符[]{终结符.VAR,类型定义,参量名表},
             //参量名表
             new 结符[]{终结符.Id("形参名"),参量名余},
             //参量名余
@@ -361,7 +357,6 @@ namespace SNL {
             },
             [变量名表.Content] = new() {
                 [终结符.ID.KeyStr] = 30,
-
             },
             [变量名余.Content] = new() {
                 [终结符.分号.KeyStr] = 31,
@@ -436,6 +431,7 @@ namespace SNL {
             },
             [赋调语句.Content] = new() {
                 [终结符.赋值.KeyStr] = 55,
+                [终结符.左方.KeyStr] = 55,
                 [终结符.左圆.KeyStr] = 56,
             },
             [赋值语句.Content] = new() {
@@ -484,6 +480,7 @@ namespace SNL {
             [其余项目.Content] = new() {
                 [终结符.小于.KeyStr] = 70,
                 [终结符.等号.KeyStr] = 70,
+                [终结符.右方.KeyStr] = 70,
                 [终结符.THEN.KeyStr] = 70,
                 [终结符.ELSE.KeyStr] = 70,
                 [终结符.FI.KeyStr] = 70,
@@ -532,6 +529,7 @@ namespace SNL {
                 [终结符.减号.KeyStr] = 78,
                 [终结符.小于.KeyStr] = 78,
                 [终结符.等号.KeyStr] = 78,
+                [终结符.右方.KeyStr] = 78,
                 [终结符.THEN.KeyStr] = 78,
                 [终结符.ELSE.KeyStr] = 78,
                 [终结符.FI.KeyStr] = 78,
