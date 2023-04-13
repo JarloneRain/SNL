@@ -29,12 +29,12 @@ namespace SNL {
             public int 行号 { get; } = 0;
             public virtual 符号表 局部符号表 => 亲!.局部符号表;
             public abstract List<语义错误> 语义检查();
-            public string Indent =>  亲 == null ? "" : 亲.Indent + "\t";
+            public string Indent => 亲 == null ? "" : 亲.Indent + "\t";
             public 语法点(int 行号, 语法点? 亲 = null) {
                 this.行号 = 行号;
                 this.亲 = 亲;
             }
-           
+
         }
         //语法之声明
         internal abstract class 声明 : 语法点 {
@@ -191,13 +191,42 @@ namespace SNL {
                     case '=':
                         左!.语义检查().ForEach(e => 语义错误列表.Add(e));
                         右!.语义检查().ForEach(e => 语义错误列表.Add(e));
+                        if (!左!.是数值() || !右!.是数值()) {
+                            语义错误列表.Add(new 语义错误 {
+                                行号 = 行号,
+                                错误内容 = 语义错误Enum.运算符的分量类型不相容,
+                            });
+                        }
                         break;
                     case '_':
-
-                        //获取“左”的类型
-                        //判断“右”是否为数字
+                        if (!左!.表达式类型().是数组()) {
+                            语义错误列表.Add(new 语义错误 {
+                                行号 = 行号,
+                                错误内容 = 语义错误Enum.非期望的标识符类别,
+                            });
+                        }
+                        if (!右!.是数值()) {
+                            语义错误列表.Add(new 语义错误 {
+                                行号 = 行号,
+                                错误内容 = 语义错误Enum.数组下标非法,
+                            });
+                        }
                         break;
                     case '.':
+                        var t = 左!.表达式类型();
+                        if (!左!.表达式类型().是记录()) {
+                            语义错误列表.Add(new 语义错误 {
+                                行号 = 行号,
+                                错误内容 = 语义错误Enum.非期望的标识符类别,
+                            });
+                        }
+                        var r = (t as 记录类型描述)!;
+                        if (r.字段.FindAll(f => f.名称 == 右!.内容).Count!=1) {
+                            语义错误列表.Add(new 语义错误 {
+                                行号 = 行号,
+                                错误内容 = 语义错误Enum.未知的字段,
+                            });
+                        }
 
                         break;
                 }
@@ -257,7 +286,7 @@ namespace SNL {
                         }
                         return true;
                     case '_':
-                        return 左!.表达式类型() == 类型描述.类型类别Enum.数组类型
+                        return 左!.表达式类型().是数组()
                             && 右!.是数值();
                     default: return false;
                 }
@@ -290,27 +319,36 @@ namespace SNL {
                     case '.':
                         var rs = 局部符号表[左!.内容];
                         if (rs.Count != 1) {
-                            return new 基础类型描述{ 
-                                类型类别=类型描述.类型类别Enum.未知类型
-                            };
+                            goto default;
                         }
                         var r = rs[0];
                         if (rs[0].表项类别 != 符号表.符号表项.表项类别Enum.变量
                             || (r as 符号表.变量)!.类型.类型类别 != 类型描述.类型类别Enum.记录类型) {
-                            return 类型描述.类型类别Enum.未知类型;
+                            goto default;
                         }
                         var fs = ((r as 符号表.变量)!.类型 as 记录类型描述)!.字段.FindAll(f => f.名称 == 右!.内容);
                         if (fs.Count != 1) {
-                            return 类型描述.类型类别Enum.未知类型;
+                            goto default;
                         }
                         var f = fs[0];
-                        return f.类型.类型类别;
+                        return f.类型;
                     case '_':
-                        
+                        var a = 右!.表达式类型();
+                        if (!a.是数组()) {
+                            goto default;
+                        }
+
                         break;
+                    default:
+                        return new 基础类型描述 {
+                            类型类别 = 类型描述.类型类别Enum.未知类型
+                        };
                 }
 
-                return 类型描述.类型类别Enum.未知类型;
+                return new 基础类型描述 {
+                    行号=行号,
+                    类型类别 = 类型描述.类型类别Enum.未知类型,
+                };
             }
             public 表达式(int 行号, 语法点 亲, char 算符, string 内容 = "") :
                 base(行号, 亲) {
