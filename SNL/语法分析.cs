@@ -14,7 +14,7 @@ namespace SNL {
     internal static class 语法 {
         
         public static 语法树 分析_递归下降(List<Token> tokenList) {
-            //写完之前防止报错用的，最后记得改掉
+            //写完之前防止报错用的，最后记得改掉jnjknknjk
             return 分析_LL1(tokenList);
         }
 
