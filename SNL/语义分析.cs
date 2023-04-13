@@ -30,8 +30,6 @@ namespace SNL {
         未知错误
     }
     internal static class 语义 {
-        public static List<语义错误> 分析(语法树 语法树) {
-            return 语法树.语义检查();
-        }
+        public static List<语义错误> 分析(语法树 语法树) => 语法树.语义检查();
     }
 }

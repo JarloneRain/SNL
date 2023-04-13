@@ -19,7 +19,6 @@ namespace SNL {
         }
 
 
-
         class 表达式构造器 {
             public static readonly Dictionary<char, int> 算符优先级 = new() {
                 ['('] = 0,
@@ -153,8 +152,8 @@ namespace SNL {
                                         行号 = curLine,
                                         下界 = arrayLow,
                                         上界 = arrayTop,
-                                        元素类型 = 类型描述.整数类型(token.Line),
-                                    } : 类型描述.整数类型(token.Line);
+                                        元素类型 =基础类型描述.整数类型(token.Line),
+                                    } : 基础类型描述.整数类型(token.Line);
                                     isArray = false;
                                 }
                                 break;
@@ -165,8 +164,8 @@ namespace SNL {
                                         行号 = curLine,
                                         下界 = arrayLow,
                                         上界 = arrayTop,
-                                        元素类型 = 类型描述.字符类型(token.Line),
-                                    } : 类型描述.字符类型(token.Line);
+                                        元素类型 = 基础类型描述.字符类型(token.Line),
+                                    } : 基础类型描述.字符类型(token.Line);
                                     isArray = false;
                                 }
                                 break;

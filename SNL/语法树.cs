@@ -221,7 +221,7 @@ namespace SNL {
                             });
                         }
                         var r = (t as 记录类型描述)!;
-                        if (r.字段.FindAll(f => f.名称 == 右!.内容).Count!=1) {
+                        if (r.字段.FindAll(f => f.名称 == 右!.内容).Count != 1) {
                             语义错误列表.Add(new 语义错误 {
                                 行号 = 行号,
                                 错误内容 = 语义错误Enum.未知的字段,
@@ -241,16 +241,15 @@ namespace SNL {
             /*
             ** # 立即数
             ** $ 变量
+            ** . 成员访问
+            ** _ 数组访问
             ** + 加法
             ** - 减法
             ** * 乘法
             ** / 除法
             ** < 小于
             ** = 等于
-            ** _ 数组访问
-            ** . 成员访问
             */
-
             public char 算符 { get; }
             //为变量或立即数时有效
             public string 内容 { get; }
@@ -291,64 +290,84 @@ namespace SNL {
                     default: return false;
                 }
             }
-            public bool 是布尔() => (算符 is '<' or '=')
-                && 左!.是数值()
-                && 右!.是数值();
-
+            public bool 是布尔() => 表达式类型().是布尔();
             public bool 是数值() {
                 switch (算符) {
+                    case '#':
+                        return true;
+                    case '$': 
+                    case '.':
+                    case '_':
+                        return 是左值();
                     case '+':
                     case '-':
                     case '*':
                     case '/':
                         return 左!.是数值() && 右!.是数值();
-                    case '#':
-                        return true;
-                    case '$':
-                    case '.':
-                    case '_':
-                        return 是左值();
                     case '<':
                     case '=':
+                        return false;
                     default:
                         return false;
                 }
             }
             public 类型描述 表达式类型() {
                 switch (算符) {
+                    case '#':
+                        return 基础类型描述.整数类型();
+                    case '$':
+                        var vs = 局部符号表[内容];
+                        if (vs.Count != 1) {
+                            return 类型描述.未知类型;
+                        }
+                        var v = vs[0];
+                        if (v.表项类别 != 符号表.符号表项.表项类别Enum.变量) {
+                            return 类型描述.未知类型;
+                        }
+                        return (v as 符号表.变量)!.类型.获取原型(局部符号表);
                     case '.':
                         var rs = 局部符号表[左!.内容];
                         if (rs.Count != 1) {
-                            goto default;
+                            return 类型描述.未知类型;
                         }
                         var r = rs[0];
                         if (rs[0].表项类别 != 符号表.符号表项.表项类别Enum.变量
                             || (r as 符号表.变量)!.类型.类型类别 != 类型描述.类型类别Enum.记录类型) {
-                            goto default;
+                            return 类型描述.未知类型;
                         }
                         var fs = ((r as 符号表.变量)!.类型 as 记录类型描述)!.字段.FindAll(f => f.名称 == 右!.内容);
                         if (fs.Count != 1) {
-                            goto default;
+                            return 类型描述.未知类型;
                         }
                         var f = fs[0];
                         return f.类型;
                     case '_':
-                        var a = 右!.表达式类型();
+                        var a = 左!.表达式类型();
                         if (!a.是数组()) {
-                            goto default;
+                            return 类型描述.未知类型;
                         }
-
-                        break;
+                        var k = 右!.表达式类型();
+                        if (!k.是整数()) {
+                            return 类型描述.未知类型;
+                        }
+                        return (a as 数组类型描述)!.元素类型;
+                    case '+':
+                    case '-':
+                    case '*':
+                    case '/':
+                        if (左!.是数值() && 右!.是数值()) {
+                            return 基础类型描述.整数类型();
+                        }
+                        return 类型描述.未知类型;
+                    case '<':
+                    case '=':
+                        if (左!.是数值() && 右!.是数值()) {
+                            return 基础类型描述.布尔类型();
+                        }
+                        return 类型描述.未知类型;
                     default:
-                        return new 基础类型描述 {
-                            类型类别 = 类型描述.类型类别Enum.未知类型
-                        };
+                        return 类型描述.未知类型;
                 }
-
-                return new 基础类型描述 {
-                    行号=行号,
-                    类型类别 = 类型描述.类型类别Enum.未知类型,
-                };
             }
             public 表达式(int 行号, 语法点 亲, char 算符, string 内容 = "") :
                 base(行号, 亲) {
@@ -382,12 +401,8 @@ namespace SNL {
         }
         //语法之语句之空的
         internal class 空的语句 : 语句 {
-            public override List<语义错误> 语义检查() {
-                return new();
-            }
-            public override string ToString() {
-                return "";
-            }
+            public override List<语义错误> 语义检查() => new();
+            public override string ToString() => "";
             /******************/
             public 空的语句(int 行号, 语法点 亲) : base(行号, 亲, 语句类别Enum.空的语句) { }
         }
@@ -416,7 +431,9 @@ namespace SNL {
                         } else {
                             for (int k = 0; k < (proc.参数列表.Count + 实参列表.Count) / 2; k++) {
                                 var arg = proc.参数列表[k];
-                                if (arg.引用 && !实参列表[k].是左值() //双方就收到回复i谁是
+                                var act = 实参列表[k];
+                                if (arg.引用 && !act.是左值() ||
+                                    !arg.参数.变量类型.获取原型(局部符号表).能接受(act.表达式类型())
                                 ) {
                                     语义错误列表.Add(new 语义错误 {
                                         行号 = 实参列表[k].行号,
@@ -454,7 +471,7 @@ namespace SNL {
                         错误内容 = 语义错误Enum.向非变量的标识符赋值,
                     });
                 }
-                if (左!.表达式类型 != 右!.表达式类型) {
+                if (左!.表达式类型().能接受(右!.表达式类型())) {
                     语义错误列表.Add(new 语义错误 {
                         行号 = 右!.行号,
                         错误内容 = 语义错误Enum.赋值语句的左右两边类型不相容,
@@ -491,6 +508,15 @@ namespace SNL {
         internal class 输入语句 : 语句 {
             public override List<语义错误> 语义检查() {
                 List<语义错误> 语义错误列表 = new();
+
+                待输入量!.语义检查().ForEach(e => 语义错误列表.Add(e));
+                if (待输入量!.是左值()) {
+                    语义错误列表.Add(new 语义错误 {
+                        行号 = 行号,
+                        错误内容 = 语义错误Enum.向非变量的标识符赋值,
+                    });
+                }
+
                 return 语义错误列表;
             }
             public override string ToString() {
@@ -571,10 +597,7 @@ namespace SNL {
         }
         //语法之语句之返回语句
         internal class 返回语句 : 语句 {
-            public override List<语义错误> 语义检查() {
-                List<语义错误> 语义错误列表 = new();
-                return 语义错误列表;
-            }
+            public override List<语义错误> 语义检查() => new();
             public override string ToString() {
                 return $"{Indent}返回";
             }
