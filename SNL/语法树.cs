@@ -416,8 +416,7 @@ namespace SNL {
                         } else {
                             for (int k = 0; k < (proc.参数列表.Count + 实参列表.Count) / 2; k++) {
                                 var arg = proc.参数列表[k];
-                                if (arg.引用 && !实参列表[k].是左值() ||
-                                    arg.参数.变量类型.类型类别 != 实参列表[k].表达式类型()
+                                if (arg.引用 && !实参列表[k].是左值() //双方就收到回复i谁是
                                 ) {
                                     语义错误列表.Add(new 语义错误 {
                                         行号 = 实参列表[k].行号,
