@@ -38,7 +38,7 @@ namespace SNL {
         public static 基础类型描述 整数类型(int 行号 = 0) => new 基础类型描述 {
             行号 = 行号,
             类型类别 = 类型类别Enum.基础类型,
-            类型 =基础类型Enum.整数类型,
+            类型 = 基础类型Enum.整数类型,
         };
         public static 基础类型描述 字符类型(int 行号 = 0) => new 基础类型描述 {
             行号 = 行号,
@@ -70,7 +70,7 @@ namespace SNL {
                 if (字段.FindAll(rf => rf.名称 == f.名称).Count > 1) {
                     语义错误列表.Add(new 语义错误 {
                         行号 = 行号,
-                        错误内容 = 语义错误Enum.重复的标识符,
+                        错误类别 = 语义错误.语义错误类别Enum.重复的标识符,
                     });
                 }
             });
@@ -82,7 +82,10 @@ namespace SNL {
         public int 下界 { get; init; }
         public int 上界 { get; init; }
         public 基础类型描述 元素类型 { get; init; } = 基础类型描述.整数类型();
-        public override List<语义错误> 语义检查() => new() { 下界 <= 上界 ? 语义错误.OK : new 语义错误 { 行号 = 行号, 错误内容 = 语义错误Enum.数组下标非法 } };
+        public override List<语义错误> 语义检查() => new() { 下界 <= 上界 ? 语义错误.OK : new 语义错误 {
+            行号 = 行号,
+            错误类别 =语义错误.  语义错误类别Enum.数组下标非法
+        }};
         public override string ToString() => $"ARRAY[{下界}..{上界}]{元素类型}";
     }
     internal class 自定类型描述 : 类型描述 {

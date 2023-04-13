@@ -84,11 +84,11 @@ namespace SNL {
             }
             try {
                 var 语义错误列表 = 语义.分析(语法树!);
-                语义错误列表.RemoveAll(e => e.错误内容 == 语义错误Enum.OK);
                 文本框编译结果.Text = 语义错误列表.Count == 0 ? "没有语义错误" : "";
-                语义错误列表.ForEach(e => 文本框编译结果.Text += e.ToString());
+                语义错误列表.ForEach(e => 文本框编译结果.Text += $"{e}\n");
                 编译状态 = 编译状态Enum.语义分析完成;
             } catch (语法分析异常 ex) {
+                编译状态 = 编译状态Enum.语义分析出错;
                 文本框编译结果.Text = ex.Message;
             }
         }
