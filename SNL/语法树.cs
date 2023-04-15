@@ -41,7 +41,9 @@ namespace SNL {
         //语法之声明
         internal abstract class 声明 : 语法点 {
             public abstract void 更新符号表();
-            public 声明(int 行号, 语法点? 亲) : base(行号, 亲) { }
+            public 声明(int 行号, 语法点? 亲) :
+                base(行号, 亲) {
+            }
         }
         //语法之类型声明
         internal class 类型声明 : 声明 {
@@ -91,6 +93,8 @@ namespace SNL {
                 if (变量类型.类型类别 == 类型描述.类型类别Enum.自定类型) {
                     var t = (变量类型 as 自定类型描述)!;
                     语义错误列表.Add(符号数目错误(t.类型名, 行号, 局部符号表));
+                } else {
+                    变量类型.语义检查().ForEach(e => 语义错误列表.Add(e));
                 }
                 语义错误列表.Add(符号数目错误(变量名, 行号, 局部符号表));
 
@@ -116,14 +120,17 @@ namespace SNL {
         }
         //语法之过程声明
         internal class 过程声明 : 声明 {
-            符号表 _局部符号表 = new();
+            符号表 _局部符号表;
             public override 符号表 局部符号表 => _局部符号表;
             public override void 更新符号表() {
                 局部符号表.添加(new 符号表.过程(过程名, 行号, _局部符号表, 参数列表));
                 参数列表.ForEach(a => 局部符号表.添加(new 符号表.变量(a.参数.变量名, a.参数.行号, 局部符号表, a.参数.变量类型, true)));
                 类型声明列表.ForEach(t => t.更新符号表());
                 变量声明列表.ForEach(v => v.更新符号表());
-                过程声明列表.ForEach(p => p.更新符号表());
+                过程声明列表.ForEach(p => {
+                    局部符号表.添加(new 符号表.过程(p.过程名, p.行号, _局部符号表, p.参数列表));
+                    p.更新符号表();
+                });
             }
             public override List<语义错误> 语义检查() {
                 var 语义错误列表 = new List<语义错误>() {
@@ -175,6 +182,7 @@ namespace SNL {
             internal 过程声明(int 行号, 语法点? 亲, string 过程名, List<(变量声明 参数, bool 引用)>? 参数列表 = null) :
                 base(行号, 亲) {
                 this.过程名 = 过程名;
+                _局部符号表 = new 符号表(亲?.局部符号表);
             }
         }
         //语法之表达式
@@ -234,7 +242,6 @@ namespace SNL {
                                 附加说明 = $"{右}",
                             });
                         }
-
                         break;
                 }
                 return 语义错误列表;
@@ -278,11 +285,11 @@ namespace SNL {
                             return false;
                         }
                         var r = rs[0];
-                        if (rs[0].表项类别 != 符号表.符号表项.表项类别Enum.变量
-                            || (r as 符号表.变量)!.类型.类型类别 != 类型描述.类型类别Enum.记录类型) {
+                        if (r.表项类别 != 符号表.符号表项.表项类别Enum.变量
+                            || (r as 符号表.变量)!.类型.获取原型(局部符号表).类型类别 != 类型描述.类型类别Enum.记录类型) {
                             return false;
                         }
-                        var fs = ((r as 符号表.变量)!.类型 as 记录类型描述)!.字段.FindAll(f => f.名称 == 右!.内容);
+                        var fs = ((r as 符号表.变量)!.类型.获取原型(局部符号表) as 记录类型描述)!.字段.FindAll(f => f.名称 == 右!.内容);
                         if (fs.Count != 1) {
                             return false;
                         }
@@ -338,11 +345,14 @@ namespace SNL {
                             return 类型描述.未知类型;
                         }
                         var r = rs[0];
-                        if (rs[0].表项类别 != 符号表.符号表项.表项类别Enum.变量
-                            || (r as 符号表.变量)!.类型.类型类别 != 类型描述.类型类别Enum.记录类型) {
+                        if (rs[0].表项类别 != 符号表.符号表项.表项类别Enum.变量) {
                             return 类型描述.未知类型;
                         }
-                        var fs = ((r as 符号表.变量)!.类型 as 记录类型描述)!.字段.FindAll(f => f.名称 == 右!.内容);
+                        var ro = (r as 符号表.变量)!.类型.获取原型(局部符号表);
+                        if (ro.类型类别 != 类型描述.类型类别Enum.记录类型) {
+                            return 类型描述.未知类型;
+                        }
+                        var fs = (ro as 记录类型描述)!.字段.FindAll(f => f.名称 == 右!.内容);
                         if (fs.Count != 1) {
                             return 类型描述.未知类型;
                         }
@@ -396,13 +406,8 @@ namespace SNL {
             }
             /*********************/
             public 语句类别Enum 语句类别 { get; }
-            public 语句(
-                int 行号,
-                语法点 亲,
-                语句类别Enum 语句类别
-            ) : base(
-                行号, 亲
-            ) {
+            public 语句(int 行号, 语法点 亲, 语句类别Enum 语句类别) :
+                base(行号, 亲) {
                 this.语句类别 = 语句类别;
             }
         }
@@ -411,7 +416,9 @@ namespace SNL {
             public override List<语义错误> 语义检查() => new();
             public override string ToString() => "";
             /******************/
-            public 空的语句(int 行号, 语法点 亲) : base(行号, 亲, 语句类别Enum.空的语句) { }
+            public 空的语句(int 行号, 语法点 亲) :
+                base(行号, 亲, 语句类别Enum.空的语句) {
+            }
         }
         //语法之语句之调用
         internal class 调用语句 : 语句 {
@@ -468,7 +475,10 @@ namespace SNL {
             /******************/
             public string 过程名 { get; }
             public List<表达式> 实参列表 { get; } = new();
-            public 调用语句(int 行号, 语法点 亲, string 过程名) : base(行号, 亲, 语句类别Enum.调用语句) { this.过程名 = 过程名; }
+            public 调用语句(int 行号, 语法点 亲, string 过程名) :
+                base(行号, 亲, 语句类别Enum.调用语句) {
+                this.过程名 = 过程名;
+            }
         }
         //语法之语句之赋值
         internal class 赋值语句 : 语句 {
@@ -482,7 +492,7 @@ namespace SNL {
                         附加说明 = $"{左}",
                     });
                 }
-                if (左!.表达式类型().能接受(右!.表达式类型())) {
+                if (!左!.表达式类型().能接受(右!.表达式类型())) {
                     语义错误列表.Add(new 语义错误 {
                         行号 = 右!.行号,
                         错误类别 = 语义错误.语义错误类别Enum.赋值语句的左右两边类型不相容,
@@ -492,9 +502,7 @@ namespace SNL {
 
                 return 语义错误列表;
             }
-            public override string ToString() {
-                return $"{Indent}赋值\n" + 左!.ToString() + 右!.ToString();
-            }
+            public override string ToString() => $"{Indent}赋值\n{左!}{右!}";
             /*********************/
             public 表达式? 左 { get; set; }
             public 表达式? 右 { get; set; }
@@ -509,12 +517,12 @@ namespace SNL {
 
                 return 语义错误列表;
             }
-            public override string ToString() {
-                return $"{Indent}输出\n" + 待输出值!.ToString();
-            }
+            public override string ToString() => $"{Indent}输出\n{待输出值!}";
             /*********************/
             public 表达式? 待输出值 { get; set; }
-            public 输出语句(int 行号, 语法点 亲) : base(行号, 亲, 语句类别Enum.输出语句) { }
+            public 输出语句(int 行号, 语法点 亲) :
+                base(行号, 亲, 语句类别Enum.输出语句) {
+            }
         }
         //语法之语句之输入
         internal class 输入语句 : 语句 {
@@ -522,7 +530,7 @@ namespace SNL {
                 List<语义错误> 语义错误列表 = new();
 
                 待输入量!.语义检查().ForEach(e => 语义错误列表.Add(e));
-                if (待输入量!.是左值()) {
+                if (!待输入量!.是左值()) {
                     语义错误列表.Add(new 语义错误 {
                         行号 = 行号,
                         错误类别 = 语义错误.语义错误类别Enum.向非变量的标识符赋值,
@@ -532,9 +540,7 @@ namespace SNL {
 
                 return 语义错误列表;
             }
-            public override string ToString() {
-                return $"{Indent}输入\n" + 待输入量!.ToString();
-            }
+            public override string ToString() => $"{Indent}输入\n{待输入量!}";
             /*********************/
             public 表达式? 待输入量 { get; set; } = null;
             public 输入语句(int 行号, 语法点 亲) : base(行号, 亲, 语句类别Enum.输入语句) { }
@@ -575,7 +581,9 @@ namespace SNL {
             public 表达式? 条件 { get; set; } = null;
             public List<语句> THEN { get; } = new();
             public List<语句> ELSE { get; } = new();
-            public 条件语句(int 行号, 语法点 亲) : base(行号, 亲, 语句类别Enum.条件语句) { }
+            public 条件语句(int 行号, 语法点 亲) :
+                base(行号, 亲, 语句类别Enum.条件语句) {
+            }
         }
         //语法之语句之循环
         internal class 循环语句 : 语句 {
@@ -592,7 +600,6 @@ namespace SNL {
 
                 循环体.ForEach(s => s.语义检查().ForEach(e => 语义错误列表.Add(e)));
 
-
                 return 语义错误列表;
             }
             public override string ToString() {
@@ -608,16 +615,18 @@ namespace SNL {
             /******************/
             public 表达式? 条件 { get; set; } = null;
             public List<语句> 循环体 { get; } = new();
-            public 循环语句(int 行号, 语法点 亲) : base(行号, 亲, 语句类别Enum.循环语句) { }
+            public 循环语句(int 行号, 语法点 亲) :
+                base(行号, 亲, 语句类别Enum.循环语句) {
+            }
         }
         //语法之语句之返回语句
         internal class 返回语句 : 语句 {
             public override List<语义错误> 语义检查() => new();
-            public override string ToString() {
-                return $"{Indent}返回";
-            }
+            public override string ToString() => $"{Indent}返回";
             /******************/
-            public 返回语句(int 行号, 语法点 亲) : base(行号, 亲, 语句类别Enum.返回语句) { }
+            public 返回语句(int 行号, 语法点 亲) :
+                base(行号, 亲, 语句类别Enum.返回语句) {
+            }
         }
     }
 }

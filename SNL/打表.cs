@@ -430,6 +430,7 @@ namespace SNL {
                 [终结符.ID.KeyStr] = 54
             },
             [赋调语句.Content] = new() {
+                [终结符.单点.KeyStr] = 55,
                 [终结符.赋值.KeyStr] = 55,
                 [终结符.左方.KeyStr] = 55,
                 [终结符.左圆.KeyStr] = 56,

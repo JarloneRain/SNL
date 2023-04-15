@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.AccessControl;
 using static SNL.语法树;
 
 namespace SNL {
@@ -12,9 +13,959 @@ namespace SNL {
         }
     }
     internal static class 语法 {
-        
+        static int _Index = 0;
+        static List<Token> _TokenList = new();
+        static 语法点? 处理(this 非终结符 nonTerminal, 语法点? 亲) {
+            return 递归下降![nonTerminal.Content][nonTerminal[_TokenList[_Index].Terminal].产生式编号](亲);
+        }
+        static Dictionary<string,//终结符
+            Dictionary<
+                int,//语法编号
+                Func<语法点?, 语法点?>//操作
+                >
+            > 递归下降 = new() {
+                [非终结符.总体程序.Content] = new() {
+                    [0] = (亲) => {//PROGRAM ID 声明部分 过程主体
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.PROGRAM.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        token = _TokenList[_Index];
+                        if (!终结符.ID.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        var program = new 过程声明(token.Line, 亲, token.Terminal.Content);
+                        _Index++;
+                        非终结符.声明部分.处理(program);
+                        非终结符.过程主体.处理(program);
+                        return program;
+                    },
+                },
+                [非终结符.声明部分.Content] = new() {
+                    [1] = (亲) => {//类型声明 变量声明 过程声明
+                        非终结符.类型声明.处理(亲);
+                        非终结符.变量声明.处理(亲);
+                        非终结符.过程声明.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.类型声明.Content] = new() {
+                    [2] = (亲) => {//
+                        return null;
+                    },
+                    [3] = (亲) => {//TYPE 类型声表
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.TYPE.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.类型声表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.类型声表.Content] = new() {
+                    [4] = (亲) => {//ID = 类型定义 ; 类型声余
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("类型名").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        var typename = token.Terminal.Content;
+                        _Index++;
+
+                        token = _TokenList[_Index];
+                        if (!终结符.等号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        var line = token.Line;
+                        _Index++;
+
+                        var typedec= (非终结符.类型定义.处理(亲) as 类型声明)!;
+
+                        token = _TokenList[_Index];
+                        if (!终结符.分号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+
+                        (亲 as 过程声明)!.类型声明列表.Add(new 类型声明(line, 亲!, typename, typedec.类型定义));
+                        非终结符.类型声余.处理(亲);
+
+                        return null;
+                    },
+                },
+                [非终结符.类型声余.Content] = new() {
+                    [5] = (亲) => {//
+                        return null;
+                    },
+                    [6] = (亲) => {//类型声表
+                        非终结符.类型声表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.类型定义.Content] = new() {
+                    [7] = (亲) => {//基础类型
+                        return 非终结符.基础类型.处理(亲);
+                    },
+                    [8] = (亲) => {//结构类型
+                        return 非终结符.结构类型.处理(亲);
+                    },
+                    [9] = (亲) => {//ID
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("类型名").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return new 类型声明(token.Line, 亲!, "", new 自定类型描述(token.Line, token.Terminal.Content));
+                    },
+                },
+                [非终结符.基础类型.Content] = new() {
+                    [10] = (亲) => {//INTEGER
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.INTEGER.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return new 类型声明(token.Line, 亲!, "", 基础类型描述.整数类型(token.Line)) ;
+                    },
+                    [11] = (亲) => {//CHAR
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.CHAR.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return new 类型声明(token.Line, 亲!, "", 基础类型描述.字符类型(token.Line));
+                    },
+                },
+                [非终结符.结构类型.Content] = new() {
+                    [12] = (亲) => {//数组类型 
+                        return 非终结符.数组类型.处理(亲);
+                    },
+                    [13] = (亲) => {//记录类型
+                        return 非终结符.记录类型.处理(亲);
+                    },
+                },
+                [非终结符.数组类型.Content] = new() {
+                    [14] = (亲) => {//ARRAY [ 数组下界 .. 数组上界 ] OF 基础类型
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.ARRAY.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        var line = token.Line;
+                        _Index++;
+
+                        token = _TokenList[_Index];
+                        if (!终结符.左方.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+
+                        var low =int.Parse( ( 非终结符.数组下界.处理(亲) as 表达式)!.内容);
+
+                        token = _TokenList[_Index];
+                        if (!终结符.双点.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+
+                        var top=int.Parse(( 非终结符.数组上界.处理(亲)as 表达式)!.内容) ;
+
+                        token = _TokenList[_Index];
+                        if (!终结符.右方.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+
+                        token = _TokenList[_Index];
+                        if (!终结符.OF.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+
+                        var basetype=(( 非终结符.基础类型.处理(亲) as 类型声明 )!.类型定义 as 基础类型描述)!;
+
+                        return new 类型声明(0, 亲!, "", new 数组类型描述 (line,low,top,basetype));
+                    },
+                },
+                [非终结符.数组下界.Content] = new() {
+                    [15] = (亲) => {//INTC
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.INTC.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return new 表达式(token.Line,亲!,'#',token.Terminal.Content);
+                    },
+                },
+                [非终结符.数组上界.Content] = new() {
+                    [16] = (亲) => {//INTC
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.INTC.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return new 表达式(token.Line, 亲!, '#', token.Terminal.Content);
+                    },
+                },
+                [非终结符.记录类型.Content] = new() {
+                    [17] = (亲) => {//RECORD 域描述表 END
+                        Token token;
+
+                        token = _TokenList[_Index];
+                        if (!终结符.RECORD.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        var line = token.Line;
+                        _Index++;
+
+                        var record=new 类型声明(0,亲!,"", new 记录类型描述(line));
+
+                        非终结符.域描述表.处理(record);
+
+                        token = _TokenList[_Index];
+                        if (!终结符.END.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+
+                        return record;
+                    },
+                },
+                [非终结符.域描述表.Content] = new() {
+                    [18] = (亲) => {//基础类型 字段名表 ; 域描述余
+                        Token token;
+
+                        var basetype=( (非终结符.基础类型.处理(亲) as 类型声明)!.类型定义 as 基础类型描述)!;
+
+                        var fieldname= (非终结符.字段名表.处理(亲) as 表达式)!.内容;
+
+                        token = _TokenList[_Index];
+                        if (!终结符.分号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+
+                        ((亲 as 类型声明)!.类型定义 as 记录类型描述)!.字段.Add((fieldname, basetype));
+
+                        非终结符.域描述余.处理(亲);
+                        return null;
+                    },
+                    [19] = (亲) => {//数组类型 字段名表 ; 域描述余
+                        Token token;
+
+                        var arraytype= ((非终结符.数组类型.处理(亲) as 类型声明)!.类型定义 as 数组类型描述)!;
+                        
+                        var fieldname=(非终结符.字段名表.处理(亲)as 表达式)!.内容 ;
+                        
+                        token = _TokenList[_Index];
+                        if (!终结符.分号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+
+                        ((亲 as 类型声明)!.类型定义 as 记录类型描述)!.字段.Add((fieldname, arraytype));
+
+                        非终结符.域描述余.处理(亲);
+
+                        return null;
+                    },
+                },
+                [非终结符.域描述余.Content] = new() {
+                    [20] = (亲) => {//
+                        return null;
+                    },
+                    [21] = (亲) => {//域描述表
+                        非终结符.域描述表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.字段名表.Content] = new() {
+                    [22] = (亲) => {//ID 字段名余
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("字段名").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.字段名余.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.字段名余.Content] = new() {
+                    [23] = (亲) => {
+                        return null;
+                    },
+                    [24] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.逗号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.字段名表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.变量声明.Content] = new() {
+                    [25] = (亲) => {
+                        return null;
+                    },
+                    [26] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.VAR.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.变量声表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.变量声表.Content] = new() {
+                    [27] = (亲) => {
+                        Token token;
+                        非终结符.类型定义.处理(亲);
+                        非终结符.变量名表.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.分号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.变量声余.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.变量声余.Content] = new() {
+                    [28] = (亲) => {
+                        return null;
+                    },
+                    [29] = (亲) => {
+                        Token token;
+                        非终结符.变量声表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.变量名表.Content] = new() {
+                    [30] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("变量名").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.变量名余.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.变量名余.Content] = new() {
+                    [31] = (亲) => {
+                        return null;
+                    },
+                    [32] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.逗号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.变量名表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.过程声明.Content] = new() {
+                    [33] = (亲) => {
+                        return null;
+                    },
+                    [34] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.PROCEDURE.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("过程名").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        token = _TokenList[_Index];
+                        if (!终结符.左圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.参数列表.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.右圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        token = _TokenList[_Index];
+                        if (!终结符.分号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.声明部分.处理(亲);
+                        非终结符.过程主体.处理(亲);
+                        非终结符.过程声明.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.参数列表.Content] = new() {
+                    [35] = (亲) => {
+                        return null;
+                    },
+                    [36] = (亲) => {
+                        Token token;
+                        非终结符.参数描表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.参数描表.Content] = new() {
+                    [37] = (亲) => {
+                        Token token;
+                        非终结符.形式参数.处理(亲);
+                        非终结符.形参更多.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.形参更多.Content] = new() {
+                    [38] = (亲) => {
+                        return null;
+                    },
+                    [39] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.分号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.参数描表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.形式参数.Content] = new() {
+                    [40] = (亲) => {
+                        Token token;
+                        非终结符.类型定义.处理(亲);
+                        非终结符.参量名表.处理(亲);
+                        return null;
+                    },
+                    [41] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.VAR.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.类型定义.处理(亲);
+                        非终结符.参量名表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.参量名表.Content] = new() {
+                    [42] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("形参名").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.参量名余.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.参量名余.Content] = new() {
+                    [43] = (亲) => {
+                        return null;
+                    },
+                    [44] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.逗号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.参量名表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.过程主体.Content] = new() {
+                    [45] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.BEGIN.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.语句列表.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.END.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.语句列表.Content] = new() {
+                    [46] = (亲) => {
+                        Token token;
+                        非终结符.一条语句.处理(亲);
+                        非终结符.语句更多.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.语句更多.Content] = new() {
+                    [47] = (亲) => {
+                        return null;
+                    },
+                    [48] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.分号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.语句列表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.一条语句.Content] = new() {
+                    [49] = (亲) => {
+                        Token token;
+                        非终结符.条件语句.处理(亲);
+                        return null;
+                    },
+                    [50] = (亲) => {
+                        Token token;
+                        非终结符.循环语句.处理(亲);
+                        return null;
+                    },
+                    [51] = (亲) => {
+                        Token token;
+                        非终结符.输入语句.处理(亲);
+                        return null;
+                    },
+                    [52] = (亲) => {
+                        Token token;
+                        非终结符.输出语句.处理(亲);
+                        return null;
+                    },
+                    [53] = (亲) => {
+                        Token token;
+                        非终结符.返回语句.处理(亲);
+                        return null;
+                    },
+                    [54] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("赋调名").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.赋调语句.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.赋调语句.Content] = new() {
+                    [55] = (亲) => {
+                        Token token;
+                        非终结符.赋值语句.处理(亲);
+                        return null;
+                    },
+                    [56] = (亲) => {
+                        Token token;
+                        非终结符.调用语句.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.赋值语句.Content] = new() {
+                    [57] = (亲) => {
+                        Token token;
+                        非终结符.变量赘余.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.赋值.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.算术式子.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.条件语句.Content] = new() {
+                    [58] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.IF.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.条件式子.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.THEN.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.语句列表.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.ELSE.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.语句列表.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.FI.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.循环语句.Content] = new() {
+                    [59] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.WHILE.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.条件式子.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.DO.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.语句列表.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.ENDWH.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.输入语句.Content] = new() {
+                    [60] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.READ.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        token = _TokenList[_Index];
+                        if (!终结符.左圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("输入变量").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        token = _TokenList[_Index];
+                        if (!终结符.右圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.输出语句.Content] = new() {
+                    [61] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.WRITE.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        token = _TokenList[_Index];
+                        if (!终结符.左圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.算术式子.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.右圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.返回语句.Content] = new() {
+                    [62] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.RETURN.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.调用语句.Content] = new() {
+                    [63] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.左圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.实参列表.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.右圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.实参列表.Content] = new() {
+                    [64] = (亲) => {
+                        return null;
+                    },
+                    [65] = (亲) => {
+                        Token token;
+                        非终结符.算术式子.处理(亲);
+                        非终结符.实参更多.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.实参更多.Content] = new() {
+                    [66] = (亲) => {
+                        return null;
+                    },
+                    [67] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.逗号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.实参列表.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.条件式子.Content] = new() {
+                    [68] = (亲) => {
+                        Token token;
+                        非终结符.算术式子.处理(亲);
+                        非终结符.比较符号.处理(亲);
+                        非终结符.算术式子.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.算术式子.Content] = new() {
+                    [69] = (亲) => {
+                        Token token;
+                        非终结符.运算项目.处理(亲);
+                        非终结符.其余项目.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.其余项目.Content] = new() {
+                    [70] = (亲) => {
+                        return null;
+                    },
+                    [71] = (亲) => {
+                        Token token;
+                        非终结符.加减符号.处理(亲);
+                        非终结符.算术式子.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.运算项目.Content] = new() {
+                    [72] = (亲) => {
+                        Token token;
+                        非终结符.算术因子.处理(亲);
+                        非终结符.其余因子.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.其余因子.Content] = new() {
+                    [73] = (亲) => {
+                        return null;
+                    },
+                    [74] = (亲) => {
+                        Token token;
+                        非终结符.乘除符号.处理(亲);
+                        非终结符.运算项目.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.算术因子.Content] = new() {
+                    [75] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.左圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.算术式子.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.右圆.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                    [76] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.INTC.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                    [77] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("变量名").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.变量赘余.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.变量赘余.Content] = new() {
+                    [78] = (亲) => {
+                        return null;
+                    },
+                    [79] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.左方.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.算术式子.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.右方.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                    [80] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.单点.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.记录域名.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.记录域名.Content] = new() {
+                    [81] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.Id("字段名").Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.域名更多.处理(亲);
+                        return null;
+                    },
+                },
+                [非终结符.域名更多.Content] = new() {
+                    [82] = (亲) => {
+                        return null;
+                    },
+                    [83] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.左方.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        非终结符.算术式子.处理(亲);
+                        token = _TokenList[_Index];
+                        if (!终结符.右方.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.比较符号.Content] = new() {
+                    [84] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.小于.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                    [85] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.等号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.加减符号.Content] = new() {
+                    [86] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.加号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                    [87] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.减号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                },
+                [非终结符.乘除符号.Content] = new() {
+                    [88] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.乘号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                    [89] = (亲) => {
+                        Token token;
+                        token = _TokenList[_Index];
+                        if (!终结符.除号.Matches(token)) {
+                            throw new 语法分析异常(token);
+                        }
+                        _Index++;
+                        return null;
+                    },
+                }
+
+            };
         public static 语法树 分析_递归下降(List<Token> tokenList) {
-            //写完之前防止报错用的，最后记得改掉jnjknknjk
+            //写完之前防止报错用的，最后记得改掉
+
+
+
             return 分析_LL1(tokenList);
         }
 
@@ -142,30 +1093,24 @@ namespace SNL {
                             case 09://类型定义→ID
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
-                                    curType = new 自定类型描述(token.Terminal.Content) { 行号 = curLine };
+                                    curType = new 自定类型描述( token.Line, token.Terminal.Content) { 行号 = curLine };
                                 }
                                 break;
                             case 10://基础类型→INTEFER
                                 if (false) {
                                 } else if (terminal.Is(终结符.INTEGER)) {
-                                    curType = isArray ? new 数组类型描述 {
-                                        行号 = curLine,
-                                        下界 = arrayLow,
-                                        上界 = arrayTop,
-                                        元素类型 =基础类型描述.整数类型(token.Line),
-                                    } : 基础类型描述.整数类型(token.Line);
+                                    curType = isArray ? 
+                                        new 数组类型描述(curLine,arrayLow,arrayTop, 基础类型描述.整数类型(token.Line)) : 
+                                        基础类型描述.整数类型(token.Line);
                                     isArray = false;
                                 }
                                 break;
                             case 11://基础类型→CHAR
                                 if (false) {
                                 } else if (terminal.Is(终结符.CHAR)) {
-                                    curType = isArray ? new 数组类型描述 {
-                                        行号 = curLine,
-                                        下界 = arrayLow,
-                                        上界 = arrayTop,
-                                        元素类型 = 基础类型描述.字符类型(token.Line),
-                                    } : 基础类型描述.字符类型(token.Line);
+                                    curType = isArray ? 
+                                        new 数组类型描述 (curLine, arrayLow, arrayTop, 基础类型描述.字符类型(token.Line)) : 
+                                        基础类型描述.字符类型(token.Line);
                                     isArray = false;
                                 }
                                 break;
@@ -193,8 +1138,7 @@ namespace SNL {
                                 } else if (terminal.Is(终结符.RECORD)) {
                                     curLine = token.Line;
                                 } else if (terminal.Is(终结符.END)) {
-                                    curType = new 记录类型描述 {
-                                        行号 = curLine,
+                                    curType = new 记录类型描述 (curLine){
                                         字段 = curFieldList,
                                     };
                                 }
@@ -336,8 +1280,6 @@ namespace SNL {
                                                 throw new Exception("我也不知道是什么错误，反正就是就是出错了！");
                                         }
                                     }
-                                    curStmList.Add(curStm!);
-                                    //curStm = curStm.亲 as 语句;
                                 }
                                 break;
                             case 60://输入语句→READ ( ID )
@@ -494,7 +1436,6 @@ namespace SNL {
                 } catch (Exception) {
                     throw new 语法分析异常(token);
                 }
-
             }
             return new 语法树(curProc!);
         }
