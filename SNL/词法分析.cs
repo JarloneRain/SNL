@@ -3,33 +3,33 @@ using System.Collections.Generic;
 
 namespace SNL {
     internal static class 词法 {
-        public const int NUMOFRESERVED = 22;
-        public const int NUMOFSYMBOLS = 20;
         public const int RES = 0;
         public const int ID = 1;
         public const int NUM = 2;
         public const int SYM = 3;
         public const int STR = 4;
-        public const int PLUS = 100;// +
-        public const int SUB = 101;// - 
-        public const int MUL = 102;// * 
-        public const int DIV = 103;// /
-        public const int LT = 104;// <
-        public const int LBRACK = 105;// (
-        public const int RBRACK = 106;// )
-        public const int LSQUBRACK = 107;// [
-        public const int RSQUBRACK = 108;// ]
-        public const int POINT = 109;// .
-        public const int SEMI = 110;// ;
-        public const int LBRACE = 111;// {
-        public const int RBRACE = 112;// }
-        public const int EOFF = 113;// END
-        public const int BLANK = 114;// BLANK
-        public const int QUO = 115;// \'
-        public const int EQU = 116;// =
-        public const int INDEX = 117;// ..
-        public const int ASSI = 118;// :=
-        public const int COM = 119;// 
+        public const int PLUS = 5;// +
+        public const int SUB = 6;// - 
+        public const int MUL = 7;// * 
+        public const int DIV = 8;// /
+        public const int LT = 9;// <
+        public const int LB = 10;// (
+        public const int RB = 11;// )
+        public const int LS = 12;// [
+        public const int RS = 13;// ]
+        public const int POINT = 14;// .
+        public const int SEMI = 15;// ;
+        public const int LBRACE = 16;// {
+        public const int RBRACE = 17;// }
+        public const int EOFF = 18;// END
+        public const int BLANK = 19;// BLANK
+        public const int QUO = 20;// \'
+        public const int EQU = 21;// =
+        public const int INDEX = 22;// ..
+        public const int ASSI = 23;// :=
+        public const int COM = 24;// 
+        public const int Knum = 22;
+        public const int Snum = 20;
         internal static readonly string[] Keywords = new string[]
         {
             "BEGIN","END","PROGRAM","VAR",
@@ -52,13 +52,15 @@ namespace SNL {
         static int col = 1;
         static int length = 0;
 
-        static int reservedLookup(string str) {
+        static int findKword(string str) {
             string Str = str.ToUpper();
-            for (int i = 0; i < NUMOFRESERVED; i++) {
+            for (int i = 0; i < Knum; i++) {
                 if (String.Compare(Str, Keywords[i]) == 0) return i;
             }
             return -1;
         }//判断是否为保留字，并返回是哪一个保留字，否则返回-1
+
+        
 
         static void Init() {
             currentline = 1;
@@ -66,9 +68,10 @@ namespace SNL {
             col = 1;
             length = 0;
         }
-        static Token Scan(string sourceCode) {//scan函数会扫描出下一个token序列并返回
+        static Token gettoken(string sourceCode) {//扫描出下一个token序列并返回
             char[] symbols = new char[] { '+', '-', '*', '/', '<', '(', ')', '[', ']', ';', '=', ',' };
-            int[] symbols_n = new int[] { PLUS, SUB, MUL, DIV, LT, LBRACK, RBRACK, LSQUBRACK, RSQUBRACK, SEMI, EQU, COM };
+            int[] symbols_n = new int[] { PLUS, SUB, MUL, DIV, LT, LB, RB, LS, RS, SEMI, EQU, COM };
+            int sNum = 12;
             //上下一一对应
             //Token t;
             //t.Line = currentline;//从第一行开始
@@ -80,9 +83,9 @@ namespace SNL {
             if ('a' <= c && c <= 'z') goto LS1;
             if (c >= 'A' && c <= 'Z') goto LS1;
             if (c >= '0' && c <= '9') goto LS2;
-            int indexofsym;
-            for (indexofsym = 0; indexofsym < 12; indexofsym++) {
-                if (c == symbols[indexofsym]) {//只要当前的字符在符号表中就转向LS3
+            int sTable;
+            for (sTable = 0; sTable < sNum; sTable++) {
+                if (c == symbols[sTable]) {//只要当前的字符在符号表中就转向LS3
                     goto LS3;
                 }
             }
@@ -105,7 +108,7 @@ namespace SNL {
             else if (c >= '0' && c <= '9') goto LS1;
             currentchar--;//此时一个读完一个串并且读入了一个多余的字符，所以回退一位
             length--;
-            int nres = reservedLookup(str);
+            int nres = findKword(str);
             if (nres != -1) {//将已经处理的序列与保留字对比，并识别是哪一个保留字
                 Token t1 = new Token(lNum, 终结符.TypeEnum.KW, Keywords[nres],col++);
                 col = col + length;
@@ -128,19 +131,19 @@ namespace SNL {
             //t.lex = addNUMTable(str_to_num(str));//将这个数字写入数字表并返回位置
             return t2;//识别为NUM
         LS3:
-            int lex = symbols_n[indexofsym];
-            Token t3 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[lex - 100], col++);
+            int lex = symbols_n[sTable];
+            Token t3 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[lex -5], col++);
             return t3;//识别为12个单目符，其他符号要么可能为多字符要么有报错处理
         LS4://用来识别 ..、.
             str = str + c;
             c = sourceCode[currentchar++];//读下一个字符
             if (c == '.') {
                 length++;
-                Token t4 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[INDEX - 100], col++);
+                Token t4 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[INDEX - 5], col++);
                 col = col + length;
                 return t4;//识别..成功
             } else {
-                Token t4 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[POINT - 100], col++);
+                Token t4 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[POINT - 5], col++);
                 currentchar--;
                 return t4;//识别.成功
             }
@@ -165,7 +168,7 @@ namespace SNL {
             c = sourceCode[currentchar++];
             if (c == '=') {
                 length++;
-                Token t6 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[ASSI - 100], col++);
+                Token t6 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[ASSI - 5], col++);
                 col = col + length;
                 return t6;
             } else {
@@ -190,7 +193,7 @@ namespace SNL {
             col = 1;
             return t8;//
         LS9://文件结束符
-            Token t9 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[EOFF - 100], col++);
+            Token t9 = new Token(lNum, 终结符.TypeEnum.SY, Symbolwords[EOFF - 5], col++);
             return t9;//
         LS10:
             Token t10 = new Token(-1, 终结符.TypeEnum.CH, "", col++);
@@ -201,7 +204,7 @@ namespace SNL {
         internal static List<Token> 分析(string sourceCode) {
             Init();
             List<Token> tokenList = new();
-            Token temp = Scan(sourceCode);
+            Token temp = gettoken(sourceCode);
             while (!(temp.Terminal.Is(终结符.EOF))) {//只要文件还没结束
                 if (temp.Line != -1) {//换行符不生成token序列
                     tokenList.Add(temp);//结果存入tokens
@@ -215,7 +218,7 @@ namespace SNL {
                         }
                     }
                 }
-                temp = Scan(sourceCode);
+                temp = gettoken(sourceCode);
             }
 
             return tokenList;

@@ -149,7 +149,7 @@ namespace SNL {
                         var line = token.Line;
                         _Index++;
 
-                        var typedec = (非终结符.类型定义.处理(亲) as 类型声明)!;
+                        var typedec = (非终结符.类型定义.处理(亲) as 类型声明)!;/////////
 
                         token = _TokenList[_Index];
                         if (!终结符.分号.Matches(token)) {
@@ -157,7 +157,7 @@ namespace SNL {
                         }
                         _Index++;
 
-                        (亲 as 过程声明)!.类型声明列表.Add(new 类型声明(line, 亲!, typename, typedec.类型定义));
+                        (亲 as 过程声明)!.类型声明列表.Add(new 类型声明(line, 亲!, typename, typedec.类型定义));///////
                         非终结符.类型声余.处理(亲);
 
                         return null;
@@ -402,6 +402,7 @@ namespace SNL {
                         非终结符.变量声表.处理(亲);
 
                         (亲! as 过程声明)!.变量声明列表.RemoveAll(v => v.变量名 == "");
+
                         return null;
                     },
                 },
@@ -744,11 +745,11 @@ namespace SNL {
 
                         _exp = new 表达式构造器(condstm);
                         非终结符.条件式子.处理(condstm);
+
                         condstm.条件 = _exp!.Get();
-
                         var curstmlist = stmlist;
-
                         token = _TokenList[_Index];
+
                         if (!终结符.THEN.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
