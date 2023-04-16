@@ -136,7 +136,7 @@ namespace SNL {
                     [4] = (亲) => {//ID = 类型定义 ; 类型声余
                         Token token;
                         token = _TokenList[_Index];
-                        if (!终结符.Id("类型名").Matches(token)) {
+                        if (!终结符.ID.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
                         var typename = token.Terminal.Content;
