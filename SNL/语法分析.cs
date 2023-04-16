@@ -38,7 +38,7 @@ namespace SNL {
             newexp.右 = 表达式更新亲结点(exp.右, newexp);
             return newexp;
         }
-        void 构造结点并压栈(Token token) => 表达式栈.Push(表达式更新亲结点(new 表达式(token.Line, 亲, token.Terminal.Content[0]) {
+        void 构造结点并压栈(Token token) => 表达式栈.Push(表达式更新亲结点(new 表达式(token.Row, 亲, token.Terminal.Content[0]) {
             右 = 表达式栈.Pop(),
             左 = 表达式栈.Pop(),
         }, 亲)!);
@@ -102,7 +102,7 @@ namespace SNL {
                         if (!终结符.ID.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var program = new 过程声明(token.Line, 亲, token.Terminal.Content);
+                        var program = new 过程声明(token.Row, 亲, token.Terminal.Content);
                         _Index++;
                         非终结符.声明部分.处理(program);
                         非终结符.过程主体.处理(program);
@@ -146,7 +146,7 @@ namespace SNL {
                         if (!终结符.等号.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var line = token.Line;
+                        var line = token.Row;
                         _Index++;
 
                         var typedec = (非终结符.类型定义.处理(亲) as 类型声明)!;/////////
@@ -186,7 +186,7 @@ namespace SNL {
                             throw new 语法分析异常(token);
                         }
                         _Index++;
-                        return new 类型声明(token.Line, 亲!, "", new 自定类型描述(token.Line, token.Terminal.Content));
+                        return new 类型声明(token.Row, 亲!, "", new 自定类型描述(token.Row, token.Terminal.Content));
                     },
                 },
                 [非终结符.基础类型.Content] = new() {
@@ -197,7 +197,7 @@ namespace SNL {
                             throw new 语法分析异常(token);
                         }
                         _Index++;
-                        return new 类型声明(token.Line, 亲!, "", 基础类型描述.整数类型(token.Line));
+                        return new 类型声明(token.Row, 亲!, "", 基础类型描述.整数类型(token.Row));
                     },
                     [11] = (亲) => {//CHAR
                         Token token;
@@ -206,7 +206,7 @@ namespace SNL {
                             throw new 语法分析异常(token);
                         }
                         _Index++;
-                        return new 类型声明(token.Line, 亲!, "", 基础类型描述.字符类型(token.Line));
+                        return new 类型声明(token.Row, 亲!, "", 基础类型描述.字符类型(token.Row));
                     },
                 },
                 [非终结符.结构类型.Content] = new() {
@@ -224,7 +224,7 @@ namespace SNL {
                         if (!终结符.ARRAY.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var line = token.Line;
+                        var line = token.Row;
                         _Index++;
 
                         token = _TokenList[_Index];
@@ -268,7 +268,7 @@ namespace SNL {
                             throw new 语法分析异常(token);
                         }
                         _Index++;
-                        return new 表达式(token.Line, 亲!, '#', token.Terminal.Content);
+                        return new 表达式(token.Row, 亲!, '#', token.Terminal.Content);
                     },
                 },
                 [非终结符.数组上界.Content] = new() {
@@ -279,7 +279,7 @@ namespace SNL {
                             throw new 语法分析异常(token);
                         }
                         _Index++;
-                        return new 表达式(token.Line, 亲!, '#', token.Terminal.Content);
+                        return new 表达式(token.Row, 亲!, '#', token.Terminal.Content);
                     },
                 },
                 [非终结符.记录类型.Content] = new() {
@@ -290,7 +290,7 @@ namespace SNL {
                         if (!终结符.RECORD.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var line = token.Line;
+                        var line = token.Row;
                         _Index++;
 
                         var record = new 类型声明(0, 亲!, "", new 记录类型描述(line));
@@ -444,7 +444,7 @@ namespace SNL {
                         if (!终结符.Id("变量名").Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        proc.变量声明列表.Add(new 变量声明(token.Line, 亲!, token.Terminal.Content, proc.变量声明列表.Last().变量类型));
+                        proc.变量声明列表.Add(new 变量声明(token.Row, 亲!, token.Terminal.Content, proc.变量声明列表.Last().变量类型));
                         _Index++;
 
                         非终结符.变量名余.处理(亲);
@@ -481,7 +481,7 @@ namespace SNL {
                         if (!终结符.PROCEDURE.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var line = token.Line;
+                        var line = token.Row;
                         _Index++;
 
                         token = _TokenList[_Index];
@@ -583,7 +583,7 @@ namespace SNL {
                         if (!终结符.Id("形参名").Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        proc.参数列表.Add((new 变量声明(token.Line, 亲!, token.Terminal.Content, lastarg.参数.变量类型), lastarg.引用));
+                        proc.参数列表.Add((new 变量声明(token.Row, 亲!, token.Terminal.Content, lastarg.参数.变量类型), lastarg.引用));
                         _Index++;
 
                         非终结符.参量名余.处理(亲);
@@ -688,7 +688,7 @@ namespace SNL {
                         if (!终结符.ID.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        stmlist.Add(new 调用语句(token.Line, 亲!, token.Terminal.Content));
+                        stmlist.Add(new 调用语句(token.Row, 亲!, token.Terminal.Content));
                         _Index++;
 
                         非终结符.赋调语句.处理(亲);
@@ -740,7 +740,7 @@ namespace SNL {
                         if (!终结符.IF.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var condstm = new 条件语句(token.Line, 亲!);
+                        var condstm = new 条件语句(token.Row, 亲!);
                         _Index++;
 
                         _exp = new 表达式构造器(condstm);
@@ -787,7 +787,7 @@ namespace SNL {
                         if (!终结符.WHILE.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var loopstm = new 循环语句(token.Line, 亲!);
+                        var loopstm = new 循环语句(token.Row, 亲!);
                         _Index++;
 
                         _exp = new 表达式构造器(loopstm);
@@ -825,7 +825,7 @@ namespace SNL {
                         if (!终结符.READ.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var readstm = new 输入语句(token.Line, 亲!);
+                        var readstm = new 输入语句(token.Row, 亲!);
                         _Index++;
 
                         token = _TokenList[_Index];
@@ -838,7 +838,7 @@ namespace SNL {
                         if (!终结符.ID.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        readstm.待输入量 = new 表达式(token.Line, readstm, '$', token.Terminal.Content);
+                        readstm.待输入量 = new 表达式(token.Row, readstm, '$', token.Terminal.Content);
                         _Index++;
 
                         token = _TokenList[_Index];
@@ -859,7 +859,7 @@ namespace SNL {
                         if (!终结符.WRITE.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var writestm = new 输出语句(token.Line, 亲!);
+                        var writestm = new 输出语句(token.Row, 亲!);
                         _Index++;
 
                         token = _TokenList[_Index];
@@ -890,7 +890,7 @@ namespace SNL {
                         if (!终结符.RETURN.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        var retstm = new 返回语句(token.Line, 亲!);
+                        var retstm = new 返回语句(token.Row, 亲!);
                         _Index++;
 
                         stmlist.Add(retstm);
@@ -1015,7 +1015,7 @@ namespace SNL {
                         if (!终结符.INTC.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        _exp!.Push(new 表达式(token.Line, 亲!, '#', token.Terminal.Content));
+                        _exp!.Push(new 表达式(token.Row, 亲!, '#', token.Terminal.Content));
                         _Index++;
                         return null;
                     },
@@ -1025,7 +1025,7 @@ namespace SNL {
                         if (!终结符.ID.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        _exp!.Push(new 表达式(token.Line, 亲!, '$', token.Terminal.Content));
+                        _exp!.Push(new 表达式(token.Row, 亲!, '$', token.Terminal.Content));
                         _Index++;
 
                         非终结符.变量赘余.处理(亲);
@@ -1044,8 +1044,8 @@ namespace SNL {
                             throw new 语法分析异常(token);
                         }
                         //_exp!.Push(token); 这里特殊处理一下，把 arr[exp]处理成arr_(exp)
-                        _exp!.Push(new Token(token.Line, new 终结符(终结符.TypeEnum.SY, "_")));
-                        _exp!.Push(new Token(token.Line, 终结符.左圆));
+                        _exp!.Push(new Token(token.Row, new 终结符(终结符.TypeEnum.SY, "_")));
+                        _exp!.Push(new Token(token.Row, 终结符.左圆));
                         _Index++;
 
                         非终结符.算术式子.处理(亲);
@@ -1054,7 +1054,7 @@ namespace SNL {
                         if (!终结符.右方.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        _exp!.Push(new Token(token.Line, 终结符.右圆));
+                        _exp!.Push(new Token(token.Row, 终结符.右圆));
                         _Index++;
 
                         return null;
@@ -1078,7 +1078,7 @@ namespace SNL {
                         if (!终结符.Id("字段名").Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        _exp!.Push(new 表达式(token.Line, 亲!, '$', token.Terminal.Content));
+                        _exp!.Push(new 表达式(token.Row, 亲!, '$', token.Terminal.Content));
                         _Index++;
 
                         非终结符.域名更多.处理(亲);
@@ -1098,8 +1098,8 @@ namespace SNL {
                             throw new 语法分析异常(token);
                         }
                         //_exp!.Push(token); 这里特殊处理一下，把 arr[exp]处理成arr_(exp)
-                        _exp!.Push(new Token(token.Line, new 终结符(终结符.TypeEnum.SY, "_")));
-                        _exp!.Push(new Token(token.Line, 终结符.左圆));
+                        _exp!.Push(new Token(token.Row, new 终结符(终结符.TypeEnum.SY, "_")));
+                        _exp!.Push(new Token(token.Row, 终结符.左圆));
                         _Index++;
 
                         非终结符.算术式子.处理(亲);
@@ -1108,7 +1108,7 @@ namespace SNL {
                         if (!终结符.右方.Matches(token)) {
                             throw new 语法分析异常(token);
                         }
-                        _exp!.Push(new Token(token.Line, 终结符.右圆));
+                        _exp!.Push(new Token(token.Row, 终结符.右圆));
                         _Index++;
 
                         return null;
@@ -1231,7 +1231,7 @@ namespace SNL {
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
                                     curProc = new 过程声明(
-                                        token.Line,
+                                        token.Row,
                                         curProc,
                                         token.Terminal.Content
                                     );
@@ -1242,7 +1242,7 @@ namespace SNL {
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
                                     curID = token.Terminal.Content;
-                                    curLine = token.Line;
+                                    curLine = token.Row;
                                 } else if (terminal.Is(终结符.分号)) {
                                     curProc!.类型声明列表.Add(new 类型声明(
                                         curLine,
@@ -1255,15 +1255,15 @@ namespace SNL {
                             case 09://类型定义→ID
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
-                                    curType = new 自定类型描述(token.Line, token.Terminal.Content) { 行号 = curLine };
+                                    curType = new 自定类型描述(token.Row, token.Terminal.Content) { 行号 = curLine };
                                 }
                                 break;
                             case 10://基础类型→INTEFER
                                 if (false) {
                                 } else if (terminal.Is(终结符.INTEGER)) {
                                     curType = isArray ?
-                                        new 数组类型描述(curLine, arrayLow, arrayTop, 基础类型描述.整数类型(token.Line)) :
-                                        基础类型描述.整数类型(token.Line);
+                                        new 数组类型描述(curLine, arrayLow, arrayTop, 基础类型描述.整数类型(token.Row)) :
+                                        基础类型描述.整数类型(token.Row);
                                     isArray = false;
                                 }
                                 break;
@@ -1271,15 +1271,15 @@ namespace SNL {
                                 if (false) {
                                 } else if (terminal.Is(终结符.CHAR)) {
                                     curType = isArray ?
-                                        new 数组类型描述(curLine, arrayLow, arrayTop, 基础类型描述.字符类型(token.Line)) :
-                                        基础类型描述.字符类型(token.Line);
+                                        new 数组类型描述(curLine, arrayLow, arrayTop, 基础类型描述.字符类型(token.Row)) :
+                                        基础类型描述.字符类型(token.Row);
                                     isArray = false;
                                 }
                                 break;
                             case 14://数组类型→ARRAY [ 数组下界 .. 数组上界 ] OF　基础类型
                                 if (false) {
                                 } else if (terminal.Is(终结符.ARRAY)) {
-                                    curLine = token.Line;
+                                    curLine = token.Row;
                                     isArray = true;
                                 }
                                 break;
@@ -1298,7 +1298,7 @@ namespace SNL {
                             case 17://记录类型→RECORD 域描述表 END
                                 if (false) {
                                 } else if (terminal.Is(终结符.RECORD)) {
-                                    curLine = token.Line;
+                                    curLine = token.Row;
                                 } else if (terminal.Is(终结符.END)) {
                                     curType = new 记录类型描述(curLine) {
                                         字段 = curFieldList,
@@ -1315,13 +1315,13 @@ namespace SNL {
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
                                     //curVarList.Add((terminal.Content, curType!));
-                                    curProc!.变量声明列表.Add(new 变量声明(token.Line, curProc!, token.Terminal.Content, curType!));
+                                    curProc!.变量声明列表.Add(new 变量声明(token.Row, curProc!, token.Terminal.Content, curType!));
                                 }
                                 break;
                             case 34://过程声明→PROCEDURE ID ( 参数列表 ) ; 声明部分 过程主体 过程声明
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
-                                    curProc = new 过程声明(token.Line, curProc, token.Terminal.Content);
+                                    curProc = new 过程声明(token.Row, curProc, token.Terminal.Content);
                                     (curProc.亲 as 过程声明)!.过程声明列表.Add(curProc);
                                     isArgVar = false;
                                 }
@@ -1343,7 +1343,7 @@ namespace SNL {
                                 } else if (terminal.Is(终结符.ID)) {
                                     curProc!.参数列表.Add((
                                         new 变量声明(
-                                            token.Line,
+                                            token.Row,
                                             curProc,
                                             token.Terminal.Content,
                                             curType!
@@ -1355,7 +1355,7 @@ namespace SNL {
                             case 45://过程主体→BEGIN 语句列表 END
                                 if (false) {
                                 } else if (terminal.Is(终结符.BEGIN)) {
-                                    curStm = new 空的语句(token.Line, curProc!);
+                                    curStm = new 空的语句(token.Row, curProc!);
                                     curStmList = curProc!.过程体;
                                 } else if (terminal.Is(终结符.END)) {
                                     当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp);
@@ -1372,7 +1372,7 @@ namespace SNL {
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
                                     curID = token.Terminal.Content;
-                                    curLine = token.Line;
+                                    curLine = token.Row;
                                 }
                                 break;
                             case 57://赋值语句→变量赘余 := 算术式子
@@ -1385,15 +1385,15 @@ namespace SNL {
                             case 58://条件语句→IF 条件式子 THEN 语句列表 ELSE 语句列表 FI
                                 if (false) {
                                 } else if (terminal.Is(终结符.IF)) {
-                                    curStm = new 条件语句(token.Line, curStm!.亲!);
+                                    curStm = new 条件语句(token.Row, curStm!.亲!);
                                     curExp = new 表达式构造器(curStm!);
                                 } else if (terminal.Is(终结符.THEN)) {
                                     (curStm as 条件语句)!.条件 = curExp!.Get();
-                                    curStm = new 空的语句(token.Line, curStm!);
+                                    curStm = new 空的语句(token.Row, curStm!);
                                     curStmList = (curStm!.亲! as 条件语句)!.THEN;
                                 } else if (terminal.Is(终结符.ELSE)) {
                                     当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp);
-                                    curStm = new 空的语句(token.Line, curStm!.亲!);
+                                    curStm = new 空的语句(token.Row, curStm!.亲!);
                                     curStmList = (curStm!.亲! as 条件语句)!.ELSE;
                                 } else if (terminal.Is(终结符.FI)) {
                                     当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp);
@@ -1418,12 +1418,12 @@ namespace SNL {
                             case 59://循环语句→WHILE 条件式子 DO 语句列表 ENDWH
                                 if (false) {
                                 } else if (terminal.Is(终结符.WHILE)) {
-                                    curStm = new 循环语句(token.Line, curStm!.亲!);
+                                    curStm = new 循环语句(token.Row, curStm!.亲!);
                                     curExp = new 表达式构造器(curStm!);
                                 } else if (terminal.Is(终结符.DO)) {
                                     (curStm as 循环语句)!.条件 = curExp!.Get();
                                     curStmList = (curStm as 循环语句)!.循环体;
-                                    curStm = new 空的语句(token.Line, curStm);
+                                    curStm = new 空的语句(token.Row, curStm);
                                 } else if (terminal.Is(终结符.ENDWH)) {
                                     当前语句结束时根据当前语句是否为赋值语句来判断是否需要对当前赋值语句插入右值并将当前语句加到语句列表(curStmList, curStm!, curExp);
                                     curStm = curStm!.亲 as 循环语句;
@@ -1447,11 +1447,11 @@ namespace SNL {
                             case 60://输入语句→READ ( ID )
                                 if (false) {
                                 } else if (terminal.Is(终结符.READ)) {
-                                    curStm = new 输入语句(token.Line, curStm!.亲!);
+                                    curStm = new 输入语句(token.Row, curStm!.亲!);
                                 } else if (terminal.Is(终结符.左圆)) {
                                     curExp = new 表达式构造器(curStm!);
                                 } else if (terminal.Is(终结符.ID)) {
-                                    curExp!.Push(new 表达式(token.Line, curStm!, '$', token.Terminal.Content));
+                                    curExp!.Push(new 表达式(token.Row, curStm!, '$', token.Terminal.Content));
                                 } else if (terminal.Is(终结符.右圆)) {
                                     (curStm as 输入语句)!.待输入量 = curExp!.Get();
                                 }
@@ -1459,7 +1459,7 @@ namespace SNL {
                             case 61://输出语句→WRITE ( 算术式子 )
                                 if (false) {
                                 } else if (terminal.Is(终结符.WRITE)) {
-                                    curStm = new 输出语句(token.Line, curStm!.亲!);
+                                    curStm = new 输出语句(token.Row, curStm!.亲!);
                                 } else if (terminal.Is(终结符.左圆)) {
                                     curExp = new 表达式构造器(curStm!);
                                 } else if (terminal.Is(终结符.右圆)) {
@@ -1469,13 +1469,13 @@ namespace SNL {
                             case 62://返沪语句→RETURN
                                 if (false) {
                                 } else if (terminal.Is(终结符.RETURN)) {
-                                    curStm = new 返回语句(token.Line, curStm!.亲!);
+                                    curStm = new 返回语句(token.Row, curStm!.亲!);
                                 }
                                 break;
                             case 63://调用语句→( 实参列表 )
                                 if (false) {
                                 } else if (terminal.Is(终结符.左圆)) {
-                                    curStm = new 调用语句(token.Line, curStm!.亲!, curID);
+                                    curStm = new 调用语句(token.Row, curStm!.亲!, curID);
                                     curExp = new 表达式构造器(curStm!);
                                 } else if (terminal.Is(终结符.右圆)) {
                                     if (curExp != null) {
@@ -1501,23 +1501,23 @@ namespace SNL {
                             case 76://算术因子→INTC
                                 if (false) {
                                 } else if (terminal.Is(终结符.INTC)) {
-                                    curExp!.Push(new 表达式(token.Line, curStm!, '#', token.Terminal.Content));
+                                    curExp!.Push(new 表达式(token.Row, curStm!, '#', token.Terminal.Content));
                                 }
                                 break;
                             case 77://算术因子→ID 变量赘余
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
-                                    curExp!.Push(new 表达式(token.Line, curStm!, '$', token.Terminal.Content));
+                                    curExp!.Push(new 表达式(token.Row, curStm!, '$', token.Terminal.Content));
                                 }
                                 break;
                             case 79://变量赘余→[ 算术式子 ]
                                 if (false) {
                                 } else if (terminal.Is(终结符.左方)) {
                                     //curExp!.Push(token); 这里特殊处理一下，把 arr[i]处理成arr_(i)
-                                    curExp!.Push(new Token(token.Line, new 终结符(终结符.TypeEnum.SY, "_")));
-                                    curExp!.Push(new Token(token.Line, 终结符.左圆));
+                                    curExp!.Push(new Token(token.Row, new 终结符(终结符.TypeEnum.SY, "_")));
+                                    curExp!.Push(new Token(token.Row, 终结符.左圆));
                                 } else if (terminal.Is(终结符.右方)) {
-                                    curExp!.Push(new Token(token.Line, 终结符.右圆));
+                                    curExp!.Push(new Token(token.Row, 终结符.右圆));
                                 }
                                 break;
                             case 80://变量赘余→. 记录域名
@@ -1529,7 +1529,7 @@ namespace SNL {
                             case 81://记录域名→ID 域名更多
                                 if (false) {
                                 } else if (terminal.Is(终结符.ID)) {
-                                    curExp!.Push(new 表达式(token.Line, curStm!, '$', token.Terminal.Content));
+                                    curExp!.Push(new 表达式(token.Row, curStm!, '$', token.Terminal.Content));
                                 }
                                 break;
                             case 83://域名更多→[ 算术式子 ]
@@ -1537,10 +1537,10 @@ namespace SNL {
                                 } else if (terminal.Is(终结符.左方)) {
                                     curExp!.Push(new 表达式(curLine, curStm!, '$', curID));
                                     //curExp!.Push(token); 这里特殊处理一下，把 arr[i]处理成arr_(i)
-                                    curExp!.Push(new Token(token.Line, new 终结符(终结符.TypeEnum.SY, "_")));
-                                    curExp!.Push(new Token(token.Line, 终结符.左圆));
+                                    curExp!.Push(new Token(token.Row, new 终结符(终结符.TypeEnum.SY, "_")));
+                                    curExp!.Push(new Token(token.Row, 终结符.左圆));
                                 } else if (terminal.Is(终结符.右方)) {
-                                    curExp!.Push(new Token(token.Line, 终结符.右圆));
+                                    curExp!.Push(new Token(token.Row, 终结符.右圆));
                                 }
                                 break;
                             case 84://比较符号→<

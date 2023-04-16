@@ -31,7 +31,7 @@ namespace SNL {
             public int 行号 { get; } = 0;
             public virtual 符号表 局部符号表 => 亲!.局部符号表;
             public abstract List<语义错误> 语义检查();
-            public string Indent => 亲 == null ? "" : 亲.Indent + "    ";
+            public string Indent => 亲 == null ? "" : 亲.Indent + "\t";
             public 语法点(int 行号, 语法点? 亲 = null) {
                 this.行号 = 行号;
                 this.亲 = 亲;
@@ -485,6 +485,8 @@ namespace SNL {
             public override List<语义错误> 语义检查() {
                 List<语义错误> 语义错误列表 = new();
 
+                左!.语义检查().ForEach(e => 语义错误列表.Add(e));
+                右!.语义检查().ForEach(e => 语义错误列表.Add(e));
                 if (!左!.是左值()) {
                     语义错误列表.Add(new 语义错误 {
                         行号 = 左!.行号,

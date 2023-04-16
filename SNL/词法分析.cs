@@ -199,14 +199,14 @@ namespace SNL {
             Token t10 = new Token(-1, 终结符.TypeEnum.CH, "", col++);
             return t10;
         OTHER:
-            throw new Exception($"位于第{currentline}行\n出现了无法识别的字符：{((byte)c)}");
+            throw new Exception($"位于第{currentline}行\n出现了无法识别的字符：{(c)}");
         }
         internal static List<Token> 分析(string sourceCode) {
             Init();
             List<Token> tokenList = new();
             Token temp = gettoken(sourceCode);
             while (!(temp.Terminal.Is(终结符.EOF))) {//只要文件还没结束
-                if (temp.Line != -1) {//换行符不生成token序列
+                if (temp.Row != -1) {//换行符不生成token序列
                     tokenList.Add(temp);//结果存入tokens
                     //temp.Terminal.Is(终结符.END);
                     if (temp.Terminal.Is(终结符.END)) {//end后面的点不做处理

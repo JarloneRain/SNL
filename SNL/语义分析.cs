@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace SNL {
     internal class 语义错误 {
@@ -29,7 +30,7 @@ namespace SNL {
         public 语义错误类别Enum 错误类别 { get; init; }
         public string 附加说明 { get; set; } = "";
         public int 行号 { get; init; } = 0;
-        public override string ToString() => $"{行号}:{错误类别}\n{附加说明.Trim()}";
+        public override string ToString() => $"{行号}:{错误类别}\n{Regex.Replace(附加说明,@"\s+"," ") }";
     }
 
     internal static class 语义 {

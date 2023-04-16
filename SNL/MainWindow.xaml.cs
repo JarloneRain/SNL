@@ -36,12 +36,15 @@ namespace SNL {
             InitializeComponent();
             文本框代码.Text = @"program bubble {程序头 程序名标识符}
     type
-        rt=record integer i;char c;end;
+        str=record
+            integer len;
+            array[1..20] of char s;
+        end;
     var
         integer i,j,num;
         char ch;
         array[1..20] of integer a;
-        rt r;
+        str s;
     procedure q(integer num);
         var
         integer i,j,k;
@@ -67,8 +70,8 @@ namespace SNL {
     end
 begin
     read(ch);
-    r.c:=ch;
-    r.i:=1;
+    s.s[0]:=ch;
+    s.len:=1;
     read(num);
     i:=1;
     while i<(num+1) do
