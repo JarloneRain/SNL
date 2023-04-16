@@ -31,7 +31,7 @@ namespace SNL {
             public int 行号 { get; } = 0;
             public virtual 符号表 局部符号表 => 亲!.局部符号表;
             public abstract List<语义错误> 语义检查();
-            public string Indent => 亲 == null ? "" : 亲.Indent + "\t";
+            public string Indent => 亲 == null ? "" : 亲.Indent + "    ";
             public 语法点(int 行号, 语法点? 亲 = null) {
                 this.行号 = 行号;
                 this.亲 = 亲;

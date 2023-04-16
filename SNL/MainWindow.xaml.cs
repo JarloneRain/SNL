@@ -83,8 +83,7 @@ begin
         i:=i+1
     endwh
 end.";
-            文本块编译状态.Text = 编译状态Enum.请先开始编译.ToString();
-            
+            编译状态 = 编译状态Enum.请先开始编译;
         }
 
         private void 按钮词法分析_Click(object sender, RoutedEventArgs e) {
@@ -104,21 +103,21 @@ end.";
         private void 按钮语法分析_Click(object sender, RoutedEventArgs e) {
             按钮词法分析_Click(sender, e);
             if (编译状态 != 编译状态Enum.词法分析完成) {
-                MessageBox.Show("词法分析出错！");
                 return;
             }
             try {
                 switch (下拉语法分析方式.SelectedIndex) {
-                    case 0:
-                        MessageBox.Show("将开始递归下降语法分析！");
+                    case 0: 
+                        语法树 = 语法.分析_递归下降(TokenList);
                         break;
                     case 1:
                         语法树 = 语法.分析_LL1(TokenList);
                         break;
                 }
-                文本框编译结果.Text = 语法树!.ToString();
                 编译状态 = 编译状态Enum.语法分析完成;
+                文本框编译结果.Text = 语法树!.ToString();
             } catch (语法分析异常 ex) {
+                编译状态 = 编译状态Enum.语法分析出错;
                 文本框编译结果.Text = ex.Message;
             }
         }
@@ -126,14 +125,13 @@ end.";
         private void 按钮语义分析_Click(object sender, RoutedEventArgs e) {
             按钮语法分析_Click(sender, e);
             if (编译状态 != 编译状态Enum.语法分析完成) {
-                MessageBox.Show("语法分析出错！");
                 return;
             }
             try {
+                编译状态 = 编译状态Enum.语义分析完成;
                 var 语义错误列表 = 语义.分析(语法树!);
                 文本框编译结果.Text = 语义错误列表.Count == 0 ? "没有语义错误" : "";
                 语义错误列表.ForEach(e => 文本框编译结果.Text += $"{e}\n");
-                编译状态 = 编译状态Enum.语义分析完成;
             } catch (语法分析异常 ex) {
                 编译状态 = 编译状态Enum.语义分析出错;
                 文本框编译结果.Text = ex.Message;

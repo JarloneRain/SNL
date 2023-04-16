@@ -22,7 +22,7 @@ namespace SNL {
         public static 未知类型描述 未知类型 => new 未知类型描述();
         public 类型描述(int 行号, 类型类别Enum 类型类别) {
             this.行号 = 行号;
-            this.类型类别 = 类型类别Enum.未知类型;
+            this.类型类别 = 类型类别;
         }
     }
     internal class 未知类型描述 : 类型描述 {
@@ -130,6 +130,6 @@ namespace SNL {
             base(行号, 类型类别Enum.自定类型) {
             this.类型名 = 类型名;
         }
-        public override string ToString() => $"{类型名}:{获取原型()}";
+        public override string ToString() => $"{类型名}";
     }
 }
